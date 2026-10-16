@@ -1,41 +1,51 @@
-import java.util.Random;
-
 public class main {
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println("Falta el argumento n");
-            return;
-        }
         int n = Integer.parseInt(args[0]);
+        int warmup = 0;
+        boolean dump = false;
+        for (int i = 1; i < args.length; i++) {
+            if (args[i].equals("dump")) dump = true;
+            else warmup = Integer.parseInt(args[i]);
+        }
 
-        int[][] matrixA = generateMatrix(n);
-        int[][] matrixB = generateMatrix(n);
-
-        long startTime = System.nanoTime();
-        multiplyMatrices(matrixA, matrixB, n);
-        long endTime = System.nanoTime();
-
-        double elapsedSeconds = (endTime - startTime) / 1_000_000_000.0;
-        
-        System.out.printf(java.util.Locale.US, "%.6f\n", elapsedSeconds);
-    }
-
-    public static int[][] generateMatrix(int n) {
-        Random rand = new Random();
-        int[][] matrix = new int[n][n];
+        int[][] a = new int[n][n];
+        int[][] b = new int[n][n];
         for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                matrix[i][j] = rand.nextInt(10) + 1;
-        return matrix;
+            for (int j = 0; j < n; j++) {
+                a[i][j] = (7 * i + 3 * j + 1) % 10 + 1;
+                b[i][j] = (5 * i + 11 * j + 2) % 10 + 1;
+            }
+
+        int[][] c = null;
+        for (int w = 0; w < warmup; w++) c = multiplyMatrices(a, b, n);
+
+        long t0 = System.nanoTime();
+        c = multiplyMatrices(a, b, n);
+        long t1 = System.nanoTime();
+        double secs = (t1 - t0) / 1_000_000_000.0;
+
+        StringBuilder sb = new StringBuilder();
+        if (dump) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) { if (j > 0) sb.append(' '); sb.append(c[i][j]); }
+                sb.append('\n');
+            }
+            System.out.print(sb);
+        } else {
+            long checksum = 0;
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++) checksum += (long) (i + 1) * (j + 1) * c[i][j];
+            System.out.println(String.format(java.util.Locale.US, "%.6f %d", secs, checksum));
+        }
     }
 
     public static int[][] multiplyMatrices(int[][] a, int[][] b, int n) {
         int[][] result = new int[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                for (int k = 0; k < n; k++) {
-                    result[i][j] += a[i][k] * b[k][j];
-                }
+                int sum = 0;
+                for (int k = 0; k < n; k++) sum += a[i][k] * b[k][j];
+                result[i][j] = sum;
             }
         }
         return result;
